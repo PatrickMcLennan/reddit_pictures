@@ -3,6 +3,7 @@ use scraper::{Html, Selector};
 use dotenv;
 use std::io::prelude::*;
 use collections::HashMap;
+use futures::{stream, future};
 
 struct UrlAndName {
     url: String,
@@ -68,7 +69,7 @@ async fn main() {
         })
         .collect::<Vec<UrlAndName>>();
 
-    let downloads = futures::stream::FuturesUnordered::new();
+    let downloads = stream::FuturesUnordered::new();
     for post in posts {
         let path_ref = path.clone();
         downloads.push(tokio::spawn(async move {
@@ -85,6 +86,6 @@ async fn main() {
         }))
     }
 
-    futures::future::join_all(downloads).await;
+    future::join_all(downloads).await;
     ()
 }
