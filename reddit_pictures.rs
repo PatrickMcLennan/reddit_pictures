@@ -1,9 +1,9 @@
-use std::{collections, fs};
-use scraper::{Html, Selector};
-use dotenv;
-use std::io::prelude::*;
 use collections::HashMap;
+use dotenv;
 use futures::{stream, future};
+use scraper::{Html, Selector};
+use std::{collections, sync, fs};
+use std::io::prelude::*;
 
 struct UrlAndName {
     url: String,
@@ -13,7 +13,7 @@ struct UrlAndName {
 #[tokio::main]
 async fn main() {
     let url = dotenv::var("URL").expect("No URL was found in the env");
-    let path = std::sync::Arc::new(
+    let path = sync::Arc::new(
         dotenv::var("DIR_PATH").expect("No DIR_PATH was found in the env")
     );
     
@@ -74,7 +74,7 @@ async fn main() {
         let path_ref = path.clone();
         downloads.push(tokio::spawn(async move {
             let full_path = format!("{}/{}", path_ref, post.name);
-            let mut file = std::fs::File::create(full_path)
+            let mut file = fs::File::create(full_path)
                 .expect(&format!("Can't create a file for {}", post.name));
             let res = reqwest::get(&post.url)
                 .await
