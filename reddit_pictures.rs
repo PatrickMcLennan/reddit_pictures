@@ -3,7 +3,6 @@ use scraper::{Html, Selector};
 use dotenv;
 use std::io::prelude::*;
 
-#[derive(Debug)]
 struct UrlAndName {
     url: String,
     name: String
