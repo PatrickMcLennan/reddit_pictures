@@ -2,6 +2,7 @@ use std::{collections, fs};
 use scraper::{Html, Selector};
 use dotenv;
 use std::io::prelude::*;
+use collections::HashMap;
 
 struct UrlAndName {
     url: String,
@@ -23,10 +24,10 @@ async fn main() {
         .expect("Can't parse the reqwest response into text");
 	let document = Html::parse_document(&html);
 
-    let file_map: collections::HashMap<String, fs::DirEntry> =
+    let file_map: HashMap<String, fs::DirEntry> =
         fs::read_dir(&*path.clone())
             .expect("Can't read files from PATH")
-            .fold(collections::HashMap::new(), |mut map, res| {
+            .fold(HashMap::new(), |mut map, res| {
                 if let Ok(res) = res {
                     map.insert(
                         res
