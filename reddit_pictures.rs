@@ -2,6 +2,7 @@ use collections::HashMap;
 use dotenv;
 use futures::{stream, future};
 use scraper::{Html, Selector};
+use slack_rust::{http_client, chat};
 use std::{collections, sync, fs};
 use std::io::prelude::*;
 
@@ -13,10 +14,19 @@ struct UrlAndName {
 #[tokio::main]
 async fn main() {
     let url = dotenv::var("URL").expect("No URL was found in the env");
+    let slack_secret = sync::Arc::new(
+		dotenv::var("SLACK_SECRET").expect("No SLACK_SECRET was found in the env")
+	);
+    let slack_channel_id = sync::Arc::new(
+		dotenv::var("SLACK_CHANNEL_ID").expect("No SLACK_CHANNEL_ID was found in the env")
+	);
+	let slack_client = sync::Arc::new(
+		http_client::default_client()
+	);
     let path = sync::Arc::new(
         dotenv::var("DIR_PATH").expect("No DIR_PATH was found in the env")
     );
-    
+	
     let html = reqwest::get(url)
         .await
         .expect("Reqwest can't unwrap response from URL")
@@ -72,6 +82,9 @@ async fn main() {
     let downloads = stream::FuturesUnordered::new();
     for post in posts {
         let path_ref = path.clone();
+        let token_ref = slack_secret.clone();
+		let slack_client_ref = slack_client.clone();
+		let slack_channel_id_ref = slack_channel_id.clone();
         downloads.push(
 			tokio::spawn(async move {
 				let full_path = format!("{}/{}", path_ref, post.name);
@@ -83,7 +96,14 @@ async fn main() {
 					.bytes()
 					.await
 					.expect(&format!("Can't get bytes for {}", post.url));
-				file.write_all(&res)
+				file.write_all(&res).expect(&format!("Couldn't write {} to disk", post.name));
+
+				let slack_message = &chat::post_message::PostMessageRequest::builder(slack_channel_id_ref.to_string())
+					.text(format!("{}\n \n \n{}", post.name, post.url))
+					.build();
+
+				chat::post_message::post_message(&*slack_client_ref, slack_message, &*token_ref)
+					.await
 			})
 		)
     }
