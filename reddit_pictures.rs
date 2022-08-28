@@ -72,18 +72,20 @@ async fn main() {
     let downloads = stream::FuturesUnordered::new();
     for post in posts {
         let path_ref = path.clone();
-        downloads.push(tokio::spawn(async move {
-            let full_path = format!("{}/{}", path_ref, post.name);
-            let mut file = fs::File::create(full_path)
-                .expect(&format!("Can't create a file for {}", post.name));
-            let res = reqwest::get(&post.url)
-                .await
-                .expect(&format!("Got no response trying to download {}", post.url))
-                .bytes()
-                .await
-                .expect(&format!("Can't get bytes for {}", post.url));
-            file.write_all(&res)
-        }))
+        downloads.push(
+			tokio::spawn(async move {
+				let full_path = format!("{}/{}", path_ref, post.name);
+				let mut file = fs::File::create(full_path)
+					.expect(&format!("Can't create a file for {}", post.name));
+				let res = reqwest::get(&post.url)
+					.await
+					.expect(&format!("Got no response trying to download {}", post.url))
+					.bytes()
+					.await
+					.expect(&format!("Can't get bytes for {}", post.url));
+				file.write_all(&res)
+			})
+		)
     }
 
     future::join_all(downloads).await;
